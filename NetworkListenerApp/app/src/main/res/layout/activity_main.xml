@@ -8,11 +8,11 @@
     tools:context=".main.view.MainActivity">
 
     <include
-        android:id="@+id/offline_bar_include"
+        android:id="@+id/offline_bar"
         layout="@layout/offline_bar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="12dp"
         android:layout_marginVertical="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

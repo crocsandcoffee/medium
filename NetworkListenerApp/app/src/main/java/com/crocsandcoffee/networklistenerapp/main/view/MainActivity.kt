@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun render(state: NetworkStatusState) {
-        binding.offlineBarInclude.root.visibility = when (state) {
+        binding.offlineBar.offlineBarRoot.visibility = when (state) {
             NetworkStatusState.NetworkStatusConnected -> View.GONE
             NetworkStatusState.NetworkStatusDisconnected -> View.VISIBLE
         }

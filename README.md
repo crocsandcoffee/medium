@@ -1,5 +1,5 @@
 # Sample Apps/Demos/Code
-Sample apps and demos featured in [stories on medium](https://crocsandcoffee.medium.com/)
+Sample apps and demos featured on [medium](https://crocsandcoffee.medium.com/)
 
 | Command | Description |
 | ------------- | ------------- |

@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">ContactList</string>
+    <string name="msg">Message</string>
+    <string name="loading_contacts">Loading Contacts…</string>
+    <string name="need_permissions">You will need to grant the required permissions to use this app.</string>
+    <string name="last_formatted_label">Last updated: %s</string>
+    <string name="contact_permission_rationale">Read contact permission is required.</string>
+    <string name="message_dialog_title">How about sending a joke? :)</string>
+    <string name="ok">Okay</string>
+    <string name="send">Send</string>
+    <string name="message_hint">Enter message</string>
+    <string name="cancel">Cancel</string>
+    <string name="permissions_request_denied">Permission request denied</string>
+    <string name="permissions_request_dont_ask">Contact permission must be granted through device Settings.</string>
+    <string name="message_sent">Message Sent!</string>
+    <string name="message_empty">No message entered.</string>
+    <string name="message_error">Error sending message</string>
+    <string name="retry">Retry</string>
+    <string name="error_occurred">An error occurred. Please try again</string>
+
+</resources>

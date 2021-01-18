@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="user_icon_size_dp">64dp</dimen>
+    <dimen name="contact_item_height_dp">120dp</dimen>
+    <dimen name="item_horizontal_spacing_dp">12dp</dimen>
+    <dimen name="item_vertical_spacing_dp">12dp</dimen>
+    <dimen name="item_card_corner_radius_dp">4dp</dimen>
+    <dimen name="item_card_padding_dp">12dp</dimen>
+    <dimen name="item_decorator_spacing_dp">8dp</dimen>
+</resources>

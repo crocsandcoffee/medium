@@ -69,8 +69,8 @@ class MainActivityViewModel(
         // which should cancel the existing query + flow and create a new one.
         job = viewModelScope.launch(mainDispatcher) {
             repo
-                .getContactsAsFlow() // uses coroutines
-//                .getContactsAsFlowRx() // uncomment to use with Rx instead of coroutines
+                .getContactsAsFlow() // *** COMMENT OUT to use Rx ***
+//                .getContactsAsFlowRx() // *** UNCOMMENT to use Rx ***
                 .cachedIn(viewModelScope)
                 .collectLatest { _state.value = State(it) }
         }

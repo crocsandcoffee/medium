@@ -12,7 +12,7 @@ import com.crocsandcoffee.contactlist.main.ui.model.ContactItem
  *
  * The items are of type [ContactItem] which are rendered by [ContactItemViewHolder]
  *
- * @param glide a [RequestManager] scoped [MainActivity] for loading contact photo thumbnails
+ * @param glide [RequestManager] scoped [MainActivity] for loading contact photo thumbnails
  * @param onClick callback to be invoked when "Message" is tapped on a contact list item
  */
 class ContactListAdapter(

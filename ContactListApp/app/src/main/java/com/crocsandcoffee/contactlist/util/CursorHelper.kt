@@ -3,11 +3,18 @@ package com.crocsandcoffee.contactlist.util
 import android.content.ContentResolver
 import android.database.Cursor
 import android.provider.ContactsContract
+import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import androidx.core.database.getStringOrNull
 import androidx.core.net.toUri
-import com.crocsandcoffee.contactlist.main.model.ContactListRepository
+import androidx.paging.PagingSource
 import com.crocsandcoffee.contactlist.main.ui.model.ContactItem
+import io.reactivex.rxjava3.core.Scheduler
+import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -22,23 +29,86 @@ private val PROJECTION = arrayOf(
     ContactsContract.Data.DATA1
 )
 
+// selection clause for only selecting records with Phone data
 private const val SELECTION = ContactsContract.Data.MIMETYPE + " = ?"
 
-// only return contacts with phone numbers
+// selection args used to only return contacts with phone numbers
 private val SELECTION_ARGS = arrayOf(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
 
 /**
  * @author Omid
  *
- * Helper class that encapsulates the query logic for loading contacts
+ * Helper class that encapsulates the query logic for loading contacts.
+ *
+ * Contacts can be loaded using one of the two options:
+ *
+ * [loadContactsSuspend] for loading contacts via coroutines
+ * [loadContactsSingle] for loading contacts via RxJava
  */
-object CursorHelper {
+class CursorHelper(
+    private val pageSize: Int,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioScheduler: Scheduler = Schedulers.io(),
+    private val sdf: SimpleDateFormat = SimpleDateFormat("MM/dd/yyyy", Locale.US)
+) {
 
-    /** Used to format the last modified timestamp */
-    private val sdf = SimpleDateFormat("MM/dd/yyyy", Locale.US)
+    /**
+     * Load contacts via coroutines
+     */
+    @AnyThread
+    suspend fun loadContactsSuspend(
+        page: Int,
+        contentResolver: ContentResolver
+    ): PagingSource.LoadResult<Int, ContactItem> {
+        return withContext(ioDispatcher) {
+            contactsToLoadResult(loadContacts(page, contentResolver), page)
+        }
+    }
+
+    /**
+     * Load contacts via Rx
+     */
+    @AnyThread
+    fun loadContactsSingle(
+        page: Int,
+        contentResolver: ContentResolver
+    ): Single<PagingSource.LoadResult<Int, ContactItem>> {
+        return Single
+            .create<List<ContactItem>> { emitter ->
+                emitter.onSuccess(loadContacts(page, contentResolver))
+            }
+            .subscribeOn(ioScheduler)
+            .map<PagingSource.LoadResult<Int, ContactItem>> { contacts ->
+                contactsToLoadResult(contacts, page)
+            }
+            .onErrorReturn { e -> PagingSource.LoadResult.Error(e) }
+    }
+
+    /**
+     * Helper function for converting the list [contacts] to a [PagingSource.LoadResult]
+     */
+    @AnyThread
+    private fun contactsToLoadResult(
+        contacts: List<ContactItem>,
+        page: Int
+    ): PagingSource.LoadResult.Page<Int, ContactItem> {
+
+        val offset = contacts.size
+
+        /**
+         * set prevKey so pagination works when scrolling up
+         * set nextKey so this paging source knows when there is no more data left to fetch
+         * and for the next page to be properly passed up
+         */
+        return PagingSource.LoadResult.Page(
+            data = contacts,
+            prevKey = if (page == 0) null else page - offset,
+            nextKey = if (contacts.isEmpty() || offset < pageSize) null else page + offset
+        )
+    }
 
     @WorkerThread
-    fun loadContacts(page: Int, contentResolver: ContentResolver): List<ContactItem> {
+    private fun loadContacts(page: Int, contentResolver: ContentResolver): List<ContactItem> {
         /**
          * This query performs an implicit join on the different Contact tables
          * so that it can return all the columns found in [PROJECTION]
@@ -56,33 +126,35 @@ object CursorHelper {
             PROJECTION,
             SELECTION,
             SELECTION_ARGS,
-            "${ContactsContract.Contacts.STARRED} DESC LIMIT ${ContactListRepository.PAGE_SIZE} OFFSET $page"
+            "${ContactsContract.Contacts.STARRED} DESC LIMIT $pageSize OFFSET $page"
         )
 
         val contacts = mutableListOf<ContactItem>()
 
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                contacts.add(cursor.toContactItem(sdf))
+                contacts.add(cursorToContactItem(cursor))
             }
         }
 
-        cursor?.close()
-        return contacts
+        return contacts.also { cursor?.close() }
     }
 
-}
+    @WorkerThread
+    private fun cursorToContactItem(cursor: Cursor): ContactItem {
+        return with(cursor) {
+            ContactItem(
+                id = getLong(getColumnIndex(ContactsContract.Contacts._ID)),
+                name = getString(getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY)),
+                thumbnailUri = getStringOrNull(getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI))?.toUri(),
+                starred = getInt(getColumnIndex(ContactsContract.Contacts.STARRED)) != 0,
+                phoneNumber = getString(getColumnIndex(ContactsContract.Data.DATA1)),
+                lastModifiedDate = getLong(getColumnIndex(ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP))
+                    .let { timestamp ->
+                        sdf.format(Date(timestamp))
+                    }
+            )
+        }
+    }
 
-fun Cursor.toContactItem(sdf: SimpleDateFormat): ContactItem {
-    return ContactItem(
-        id = getLong(getColumnIndex(ContactsContract.Contacts._ID)),
-        name = getString(getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY)),
-        thumbnailUri = getStringOrNull(getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI))?.toUri(),
-        starred = getInt(getColumnIndex(ContactsContract.Contacts.STARRED)) != 0,
-        phoneNumber = getString(getColumnIndex(ContactsContract.Data.DATA1)),
-        lastModifiedDate = getLong(getColumnIndex(ContactsContract.Contacts.CONTACT_LAST_UPDATED_TIMESTAMP))
-            .let { timestamp ->
-                sdf.format(Date(timestamp))
-            }
-    )
 }

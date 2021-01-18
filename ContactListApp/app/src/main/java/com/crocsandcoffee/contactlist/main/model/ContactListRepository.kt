@@ -5,15 +5,23 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.crocsandcoffee.contactlist.main.ui.model.ContactItem
+import com.crocsandcoffee.contactlist.util.CursorHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
 /**
  * @author Omid
  *
- * Repository that exposes a function for loading contacts
+ * Repository used by [com.crocsandcoffee.contactlist.main.viewmodel.MainActivityViewModel]
+ * for loading a user's full contact list
  *
- * The actual loading of contacts is delegated to the [ContactsPagingSource] via
- * [getContactsAsFlow] or [getContactsAsFlowRx]
+ * Loading the contact list can be done using one of the two methods:
+ *
+ * [getContactsAsFlow] uses the [ContactsPagingSource] which leverages coroutines
+ * for fetching contacts
+ *
+ * [getContactsAsFlowRx] uses the [ContactsPagingSourceRx] which leverages RxJava
+ * for fetching contacts
  *
  * @param context ApplicationContext
  */
@@ -22,34 +30,40 @@ class ContactListRepository(private val context: Context) {
     /**
      * Use coroutines for loading contacts
      */
-    fun getContactsAsFlow(): Flow<PagingData<ContactItem>> {
+    fun getContactsAsFlow(pageSize: Int = PAGE_SIZE): Flow<PagingData<ContactItem>> {
         return Pager(
             config = PagingConfig(
-                pageSize = PAGE_SIZE,
+                pageSize = pageSize,
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { ContactsPagingSource(context) }
+            pagingSourceFactory = {
+                ContactsPagingSource(context, CursorHelper(pageSize, Dispatchers.IO))
+            }
         ).flow
     }
 
     /**
      * Use Rx for loading contacts
      */
-    fun getContactsAsFlowRx(): Flow<PagingData<ContactItem>> {
+    fun getContactsAsFlowRx(pageSize: Int = PAGE_SIZE): Flow<PagingData<ContactItem>> {
         return Pager(
             config = PagingConfig(
-                pageSize = PAGE_SIZE,
+                pageSize = pageSize,
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { ContactsPagingSourceRx(context) }
+            pagingSourceFactory = {
+                ContactsPagingSourceRx(context, CursorHelper(pageSize, Dispatchers.IO))
+            }
         ).flow
     }
 
     companion object {
-        // This should be experimented with. In our case, contact
-        // list items are small and show a small subset of metadata
-        // so we will pick a higher number to reduce overhead of large number of queries
-        const val PAGE_SIZE = 30
+        /**
+         * This should be experimented with. In our case, contact
+         * list items are small and show a small subset of metadata
+         * so we will pick a higher number to reduce overhead of large number of queries
+         */
+        private const val PAGE_SIZE = 30
     }
 
 }

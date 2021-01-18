@@ -26,6 +26,7 @@ class ContactLoadStateViewHolder(
     fun bind(loadState: LoadState) {
         binding.progressBar.isVisible = loadState is LoadState.Loading
         binding.retryButton.isVisible = loadState !is LoadState.Loading
+        binding.errorMsg.isVisible = loadState !is LoadState.Loading
         binding.retryButton.setOnClickListener { retry() }
     }
 
